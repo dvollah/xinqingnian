@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🏆 球队管理助手</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif}
+:root{--primary:#1a73e8;--primary-light:#e8f0fe;--success:#34a853;--danger:#ea4335;--warning:#fbbc04;--bg:#f0f2f5;--card:#fff;--text:#1a1a1a;--text2:#666;--border:#e0e0e0;--radius:12px;--shadow:0 2px 8px rgba(0,0,0,.08)}
+body{background:var(--bg);color:var(--text);padding-bottom:80px}
+.nav{background:var(--primary);color:#fff;padding:16px;text-align:center;font-size:18px;font-weight:700;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.nav span{opacity:.7;font-size:13px;font-weight:400;display:block;margin-top:2px}
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:52px;z-index:99;overflow-x:auto}
+.tab{flex:1;text-align:center;padding:12px 6px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:3px solid transparent;white-space:nowrap;transition:.2s}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.container{max-width:600px;margin:0 auto;padding:12px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:4px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-warning{background:var(--warning);color:#333}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn:active{opacity:.8}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:8px;background:#fff}
+input:focus,select:focus{outline:2px solid var(--primary);border-color:transparent}
+label{font-size:13px;color:var(--text2);display:block;margin-bottom:4px;margin-top:8px}
+label:first-child{margin-top:0}
+.form-row{display:flex;gap:8px}
+.form-row>*{flex:1}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:17px;margin-bottom:12px}
+.player-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;transition:.2s;border:1px solid var(--border);margin:3px;background:#fff}
+.player-tag.active{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.player-tag.confirmed{background:#e6f4ea;border-color:var(--success);color:#1e7e34}
+.player-tag.declined{background:#fce8e6;border-color:var(--danger);color:#c5221f}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat-item{text-align:center;padding:12px 4px;background:var(--bg);border-radius:8px}
+.stat-num{font-size:22px;font-weight:700;color:var(--primary)}
+.stat-label{font-size:11px;color:var(--text2);margin-top:2px}
+.player-card{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:12px}
+.player-card:last-child{border-bottom:none}
+.player-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.player-info{flex:1}
+.player-name{font-weight:600;font-size:14px}
+.player-meta{font-size:12px;color:var(--text2);margin-top:2px}
+.match-card{padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:.2s}
+.match-card:hover{border-color:var(--primary)}
+.match-card .date{font-size:12px;color:var(--text2)}
+.match-card .vs{font-size:15px;font-weight:600;margin:4px 0;display:flex;justify-content:space-between;align-items:center}
+.match-card .status{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.status-upcoming{background:var(--warning);color:#333}
+.status-completed{background:var(--success);color:#fff}
+.match-card .checkin-summary{font-size:12px;color:var(--text2);margin-top:4px}
+.rank-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:10px}
+.rank-num{width:24px;text-align:center;font-weight:700;color:var(--text2);font-size:14px}
+.rank-medal{font-size:16px}
+.stat-table{width:100%;border-collapse:collapse;font-size:13px}
+.stat-table th{background:var(--bg);padding:8px 6px;text-align:center;font-weight:600;position:sticky;top:0}
+.stat-table td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border)}
+.stat-table .name-cell{text-align:left;font-weight:500}
+.sort-icon{font-size:10px;margin-left:3px;color:var(--text2)}
+.sort-active{color:var(--primary);font-weight:700}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-league{background:#e8f0fe;color:var(--primary)}
+.badge-cup{background:#fce8e6;color:var(--danger)}
+.badge-friendly{background:#e6f4ea;color:var(--success)}
+.badge-training{background:#fef7e0;color:#e37400}
+.chart-container{height:220px;margin:12px 0}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-bar select{flex:1;min-width:80px;margin-bottom:0}
+.page{display:none}
+.page.active{display:block}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:300;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="nav" id="topNav">
+  <img id="teamLogo" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;display:none;vertical-align:middle;margin-right:6px" onerror="this.style.display='none'">
+  <span id="teamName">🏆 球队管理助手</span>
+  <span>比赛接龙 · 数据统计 · 球员管理</span>
+</div>
+
+<div class="tabs" id="tabBar">
+  <div class="tab active" data-page="home">首页</div>
+  <div class="tab" data-page="checkin">接龙</div>
+  <div class="tab" data-page="matches">比赛</div>
+  <div class="tab" data-page="players">球员</div>
+  <div class="tab" data-page="stats">统计</div>
+</div>
+
+<div class="container">
+
+<!-- ===== 首页 ===== -->
+<div class="page active" id="page-home">
+  <div class="card">
+    <div class="card-title">📊 数据概览 <span id="adminBadge" style="font-size:12px;font-weight:400;margin-left:8px;display:none;color:var(--danger)">🔓 管理状态</span></div>
+    <div class="stats-grid" id="homeStats">
+      <div class="stat-item"><div class="stat-num" id="statPlayers">0</div><div class="stat-label">球员总数</div></div>
+      <div class="stat-item"><div class="stat-num" id="statMatches">0</div><div class="stat-label">比赛场次</div></div>
+      <div class="stat-item"><div class="stat-num" id="statWins">0</div><div class="stat-label">胜场</div></div>
+      <div class="stat-item"><div class="stat-num" id="statWinRate">0%</div><div class="stat-label">胜率</div></div>
+    </div>
+    <div class="filter-bar">
+      <select id="homeYearFilter" onchange="renderHome()"><option value="all">全部年份</option></select>
+      <button class="btn btn-outline btn-sm" id="adminToggleBtn" onclick="toggleAdmin()">🔒 管理员</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚽ 近期比赛</div>
+    <div id="recentMatches"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏅 射手榜</div>
+    <div id="scorerRanking"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎯 助攻榜</div>
+    <div id="assistRanking"></div>
+  </div>
+</div>
+
+<!-- ===== 接龙页面 ===== -->
+<div class="page" id="page-checkin">
+  <div class="card">
+    <div class="card-title">
+      比赛接龙
+      <button class="btn btn-primary btn-sm" onclick="showCreateMatch()" id="createCheckinBtn" style="display:none">➕ 发起接龙</button>
+    </div>
+    <div id="checkinList"></div>
+  </div>
+
+  <div class="card" id="checkinDetail" style="display:none">
+    <div class="card-title">
+      <span id="checkinDetailTitle"></span>
+      <button class="btn btn-outline btn-sm" onclick="closeCheckinDetail()">收起</button>
+    </div>
+    <div id="checkinPlayers"></div>
+  </div>
+</div>
+
+<!-- ===== 比赛页面 ===== -->
+<div class="page" id="page-matches">
+  <div class="card">
+    <div class="card-title">
+      比赛记录
+      <button class="btn btn-primary btn-sm" onclick="showCreateMatch()" id="addMatchBtn" style="display:none">➕ 添加比赛</button>
+    </div>
+    <div class="filter-bar">
+      <select id="matchTypeFilter" onchange="renderMatches()">
+        <option value="all">全部类型</option>
+        <option value="league">联赛</option><option value="cup">杯赛</option><option value="friendly">友谊赛</option><option value="training">训练赛</option><option value="group">小组赛</option><option value="knockout">淘汰赛</option><option value="semifinal">半决赛</option><option value="final">决赛</option>
+      </select>
+      <select id="matchYearFilter" onchange="renderMatches()"><option value="all">全部年份</option></select>
+    </div>
+    <div id="matchList"></div>
+  </div>
+</div>
+
+<!-- ===== 球员页面 ===== -->
+<div class="page" id="page-players">
+  <div class="card">
+    <div class="card-title">
+      球员管理
+      <button class="btn btn-primary btn-sm" onclick="showAddPlayer()" id="addPlayerBtn" style="display:none">➕ 添加球员</button>
+    </div>
+    <div class="filter-bar">
+      <select id="playerYearFilter" onchange="renderPlayers()"><option value="all">全部年份</option></select>
+    </div>
+    <div id="playerList"></div>
+  </div>
+</div>
+
+<!-- ===== 统计页面 ===== -->
+<div class="page" id="page-stats">
+  <div class="card">
+    <div class="card-title">📈 数据统计</div>
+    <div class="filter-bar">
+      <select id="statPeriod" onchange="renderStats()">
+        <option value="overall">总数据</option>
+        <option value="season">本赛季(自然年)</option>
+      </select>
+      <select id="statMatchType" onchange="renderStats()">
+        <option value="all">全部类型</option>
+        <option value="league">联赛</option><option value="cup">杯赛</option><option value="friendly">友谊赛</option><option value="training">训练赛</option><option value="group">小组赛</option><option value="knockout">淘汰赛</option><option value="semifinal">半决赛</option><option value="final">决赛</option>
+      </select>
+      <select id="statYear" onchange="renderStats()"><option value="all">全部年份</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚽ 综合数据（按进球排序）</div>
+    <div class="stat-table-wrap" style="overflow-x:auto">
+      <table class="stat-table" id="statTable"><thead><tr>
+        <th>球员</th><th onclick="sortStat('appearances')" style="cursor:pointer">出场<span id="sortIcon-appearances" class="sort-icon"></span></th>
+        <th onclick="sortStat('goals')" style="cursor:pointer">进球<span id="sortIcon-goals" class="sort-icon sort-active">▼</span></th>
+        <th onclick="sortStat('assists')" style="cursor:pointer">助攻<span id="sortIcon-assists" class="sort-icon"></span></th>
+        <th onclick="sortStat('interceptions')" style="cursor:pointer">拦截<span id="sortIcon-interceptions" class="sort-icon"></span></th>
+        <th onclick="sortStat('mistakes')" style="cursor:pointer">失误<span id="sortIcon-mistakes" class="sort-icon"></span></th>
+        <th onclick="sortStat('yellowCards')" style="cursor:pointer">🟨<span id="sortIcon-yellowCards" class="sort-icon"></span></th>
+        <th onclick="sortStat('redCards')" style="cursor:pointer">🟥<span id="sortIcon-redCards" class="sort-icon"></span></th>
+        <th onclick="sortStat('avg')" style="cursor:pointer">场均进球<span id="sortIcon-avg" class="sort-icon"></span></th>
+        <th onclick="sortStat('rate')" style="cursor:pointer">出勤率<span id="sortIcon-rate" class="sort-icon"></span></th>
+      </tr></thead><tbody id="statBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 效率排行榜（进球+助攻+拦截+出场-失误-黄牌-红牌×2）</div>
+    <div id="effRanking"></div>
+    <div class="chart-container"><canvas id="chartGoals"></canvas></div>
+    <div class="chart-container"><canvas id="chartAppearances"></canvas></div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== Modal ===== -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Data =====
+const STORAGE_KEY = 'football_team_data';
+let data = loadData();
+let charts = {};
+
+function defaultData() {
+  return { players: [], matches: [], performances: [], checkins: [], ratings: [], nextId: 1 };
+}
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : defaultData();
+  } catch(e) { return defaultData(); }
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  // Sync to server in background
+  fetch('/api/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.json()).then(res => {
+    if(res.error) console.error('Sync failed:', res.error);
+  }).catch(() => {
+    console.error('Sync to server failed');
+  });
+}
+function genId() { return data.nextId++; }
+
+// ===== Toast =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ===== Admin State =====
+let isAdmin = false;
+function toggleAdmin() {
+  if(isAdmin) {
+    isAdmin = false;
+    document.getElementById('adminBadge').style.display = 'none';
+    document.getElementById('adminToggleBtn').textContent = '🔒 管理员';
+    ['addMatchBtn','addPlayerBtn','createCheckinBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+    renderCurrentPage(document.querySelector('.tab.active').dataset.page);
+    showToast('已退出管理状态');
+    return;
+  }
+  askAdminPassword(() => {
+    isAdmin = true;
+    document.getElementById('adminBadge').style.display = 'inline';
+    document.getElementById('adminToggleBtn').textContent = '🔑 退出管理';
+    ['addMatchBtn','addPlayerBtn','createCheckinBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = 'inline-block';
+    });
+    renderCurrentPage(document.querySelector('.tab.active').dataset.page);
+    showToast('已进入管理状态');
+  });
+}
+
+// ===== Modal Helpers =====
+function openModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+  if(e.target === this) closeModal();
+});
+
+// ===== Tab =====
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById('page-' + this.dataset.page).classList.add('active');
+    renderCurrentPage(this.dataset.page);
+  });
+});
+
+function renderCurrentPage(page) {
+  if(page === 'home') renderHome();
+  else if(page === 'checkin') renderCheckin();
+  else if(page === 'matches') renderMatches();
+  else if(page === 'players') renderPlayers();
+  else if(page === 'stats') renderStats();
+}
+
+// ===== Utils =====
+function getPlayer(id) { return data.players.find(p => p.id === id); }
+function getMatch(id) { return data.matches.find(m => m.id === id); }
+function sortedPlayers() { return [...data.players].sort((a,b) => a.name.localeCompare(b.name, 'zh')); }
+
+function getPerformancesForMatch(matchId) {
+  return data.performances.filter(p => p.matchId === matchId);
+}
+function getCheckinsForMatch(matchId) {
+  return data.checkins.filter(c => c.matchId === matchId);
+}
+
+function getYears() {
+  const years = new Set();
+  data.matches.forEach(m => {
+    if(m.date) {
+      const y = new Date(m.date).getFullYear();
+      if(!isNaN(y)) years.add(y);
+    }
+  });
+  return [...years].sort((a,b) => b-a);
+}
+
+function populateYearFilter(selId, preserve) {
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  const years = getYears();
+  const cy = new Date().getFullYear().toString();
+  const oldVal = sel.value;
+  sel.innerHTML = '<option value="all">全部年份</option>' + years.map(y => `<option value="${y}">${y}年</option>`).join('');
+  if (preserve && oldVal && [...sel.options].some(o=>o.value===oldVal)) {
+    sel.value = oldVal;
+  } else if ([...sel.options].some(o=>o.value===cy)) {
+    sel.value = cy;
+  }
+}
+let yearFiltersInitialized = false;
+function initYearFilters() {
+  ['homeYearFilter','matchYearFilter','playerYearFilter','statYear'].forEach(id => populateYearFilter(id, false));
+  yearFiltersInitialized = true;
+}
+
+function getMatchTypeBadge(type) {
+  const map = { league:'联赛', cup:'杯赛', friendly:'友谊赛', training:'训练赛', group:'小组赛', knockout:'淘汰赛', semifinal:'半决赛', final:'决赛' };
+  return `<span class="badge badge-${type}">${map[type]||type}</span>`;
+}
+
+function formatDate(d) {
+  if(!d) return '';
+  const dt = new Date(d);
+  return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+function getTimeLabel(d) {
+  if(!d) return '';
+  const dt = new Date(d);
+  const now = new Date();
+  const diff = now - dt;
+  const day = 86400000;
+  if(diff < day) return '今天';
+  if(diff < 2*day) return '昨天';
+  if(diff < 7*day) return `${Math.floor(diff/day)}天前`;
+  return formatDate(d);
+}
+
+function filterMatchesByYearType(matches, year, type) {
+  let ret = matches;
+  if(year !== 'all') ret = ret.filter(m => m.date && !isNaN(new Date(m.date).getFullYear()) && new Date(m.date).getFullYear() == year);
+  if(type !== 'all') ret = ret.filter(m => m.matchType === type);
+  return ret;
+}
+
+function filterPerformances(perfs, year, matchType) {
+  let ret = [...perfs];
+  if(year !== 'all') {
+    const matchIds = data.matches.filter(m => m.date && !isNaN(new Date(m.date).getFullYear()) && new Date(m.date).getFullYear() == year).map(m => m.id);
+    ret = ret.filter(p => matchIds.includes(p.matchId));
+  }
+  if(matchType !== 'all') {
+    const matchIds = data.matches.filter(m => m.matchType === matchType).map(m => m.id);
+    ret = ret.filter(p => matchIds.includes(p.matchId));
+  }
+  return ret;
+}
+
+// ===== HOME =====
+function renderHome() {
+  if(!yearFiltersInitialized) initYearFilters();
+  const year = document.getElementById('homeYearFilter').value;
+  let matches = filterMatchesByYearType(data.matches, year, 'all');
+
+  const totalPlayers = data.players.length;
+  const totalMatches = matches.length;
+  const wins = matches.filter(m => m.status === 'completed' && m.homeScore != null && m.awayScore != null && m.homeScore > m.awayScore).length;
+  const winRate = totalMatches ? Math.round(wins/totalMatches*100) : 0;
+  document.getElementById('statPlayers').textContent = totalPlayers;
+  document.getElementById('statMatches').textContent = totalMatches;
+  document.getElementById('statWins').textContent = wins;
+  document.getElementById('statWinRate').textContent = winRate + '%';
+
+  // Recent matches
+  const recent = [...matches].sort((a,b) => new Date(b.date||0) - new Date(a.date||0)).slice(0,5);
+  const rmEl = document.getElementById('recentMatches');
+  if(!recent.length) {
+    rmEl.innerHTML = '<div class="empty-state"><div class="icon">⚽</div>暂无比赛记录</div>';
+  } else {
+    rmEl.innerHTML = recent.map(m => {
+      const ck = getCheckinsForMatch(m.id);
+      const confirmed = ck.filter(c => c.status === 'confirmed').length;
+      const stat = m.status === 'completed' ? `<span class="status status-completed">已赛</span>` : `<span class="status status-upcoming">即将</span>`;
+      const score = m.status === 'completed' && m.homeScore != null ? `${m.homeScore} : ${m.awayScore}` : 'vs';
+      return `<div class="match-card" onclick="viewMatch(${m.id})">
+        <div class="date">${formatDate(m.date)} ${m.time||''} · ${getMatchTypeBadge(m.matchType)} ${stat}</div>
+        <div class="vs"><span>${m.teamName||'我队'}</span><span>${score}</span><span>${m.opponent||'对手'}</span></div>
+        <div class="checkin-summary">${confirmed}人确认参赛</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Scorer ranking
+  const perfs = filterPerformances(data.performances, year, 'all');
+  const scorer = {};
+  perfs.forEach(p => {
+    if(!scorer[p.playerId]) scorer[p.playerId] = 0;
+    scorer[p.playerId] += p.goals || 0;
+  });
+  const sortedScorer = Object.entries(scorer).filter(([_,g]) => g > 0).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const srEl = document.getElementById('scorerRanking');
+  if(!sortedScorer.length) {
+    srEl.innerHTML = '<div class="empty-state" style="padding:16px">暂无进球数据</div>';
+  } else {
+    srEl.innerHTML = sortedScorer.map(([pid, goals], i) => {
+      const p = getPlayer(parseInt(pid));
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+      return `<div class="rank-row"><span class="rank-medal">${medal}</span><span class="player-avatar" style="width:32px;height:32px;font-size:13px">${p ? p.name[0] : '?'}</span><span style="flex:1">${p ? p.name : '未知'}</span><span style="font-weight:700;color:var(--primary)">${goals}球</span></div>`;
+    }).join('');
+  }
+
+  // Assist ranking
+  const assistMap = {};
+  perfs.forEach(p => {
+    if(!assistMap[p.playerId]) assistMap[p.playerId] = 0;
+    assistMap[p.playerId] += p.assists || 0;
+  });
+  const sortedAssist = Object.entries(assistMap).filter(([_,a]) => a > 0).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const atEl = document.getElementById('assistRanking');
+  if(!sortedAssist.length) {
+    atEl.innerHTML = '<div class="empty-state" style="padding:16px">暂无助攻数据</div>';
+  } else {
+    atEl.innerHTML = sortedAssist.map(([pid, assists], i) => {
+      const p = getPlayer(parseInt(pid));
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+      return `<div class="rank-row"><span class="rank-medal">${medal}</span><span class="player-avatar" style="width:32px;height:32px;font-size:13px">${p ? p.name[0] : '?'}</span><span style="flex:1">${p ? p.name : '未知'}</span><span style="font-weight:700;color:var(--success)">${assists}次</span></div>`;
+    }).join('');
+  }
+}
+
+// ===== CHECKIN =====
+function renderCheckin() {
+  const upcoming = data.matches.filter(m => m.status !== 'completed').sort((a,b) => new Date(a.date||0) - new Date(b.date||0));
+  const completed = data.matches.filter(m => m.status === 'completed').sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+
+  let html = '';
+  if(!upcoming.length && !completed.length) {
+    html = '<div class="empty-state"><div class="icon">📋</div>暂无比赛，快发起接龙吧</div>';
+  } else {
+    if(upcoming.length) {
+      html += '<div style="font-size:13px;color:var(--text2);margin-bottom:8px">📌 待进行</div>';
+      html += upcoming.map(m => renderCheckinItem(m)).join('');
+    }
+    if(completed.length) {
+      html += '<div style="font-size:13px;color:var(--text2);margin:12px 0 8px">✅ 已结束</div>';
+      html += completed.slice(0,5).map(m => renderCheckinItem(m)).join('');
+    }
+  }
+  document.getElementById('checkinList').innerHTML = html;
+}
+
+function renderCheckinItem(m) {
+  const ck = getCheckinsForMatch(m.id);
+  const confirmed = ck.filter(c => c.status === 'confirmed').length;
+  const declined = ck.filter(c => c.status === 'declined').length;
+  return `<div class="match-card">
+    <div onclick="showCheckinDetail(${m.id})" style="cursor:pointer">
+      <div class="date">${formatDate(m.date)} ${m.time||''} · ${getMatchTypeBadge(m.matchType)}</div>
+      <div class="vs"><span>${m.teamName||'我队'}</span><span>vs</span><span>${m.opponent||'对手'}</span></div>
+      <div class="checkin-summary">✅ ${confirmed}人参加 · ❌ ${declined}人缺席 · 共${data.players.length}人</div>
+    </div>
+    ${isAdmin ? `<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+      ${m.status === 'completed'
+        ? `<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editMatchData(${m.id})">📊 编辑数据</button>`
+        : ''}
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editMatch(${m.id})">📝 编辑</button>
+      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();deleteMatch(${m.id})" style="color:var(--danger)">🗑 删除</button>
+    </div>` : ''}
+  </div>`;
+}
+
+function showCheckinDetail(matchId) {
+  const m = getMatch(matchId);
+  if(!m) return;
+  document.getElementById('checkinDetailTitle').textContent = `${formatDate(m.date)} vs ${m.opponent||'对手'}`;
+  document.getElementById('checkinDetail').style.display = 'block';
+
+  const players = sortedPlayers();
+  const cks = getCheckinsForMatch(matchId);
+  const ckMap = {};
+  cks.forEach(c => ckMap[c.playerId] = c.status);
+
+  let html = '<div style="margin-bottom:8px;font-size:13px;color:var(--text2)">点击球员切换参/缺席状态：</div>';
+  html += '<div style="display:flex;flex-wrap:wrap">';
+  players.forEach(p => {
+    const st = ckMap[p.id] || 'pending';
+    const cls = st === 'confirmed' ? 'confirmed' : st === 'declined' ? 'declined' : '';
+    html += `<div class="player-tag ${cls}" ${isAdmin ? `onclick="toggleCheckin(${matchId},${p.id})"` : ''}>${p.name}${st==='confirmed'?' ✅':st==='declined'?' ❌':''}</div>`;
+  });
+  html += '</div>';
+  if(m.status !== 'completed') {
+    html += `<div style="margin-top:12px">${isAdmin ? `<button class="btn btn-success btn-sm" onclick="finalizeMatch(${matchId})">✅ 确认完赛</button>` : ''}</div>`;
+  } else if(isAdmin) {
+    html += `<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="closeCheckinDetail();editMatchData(${matchId})">📊 编辑比赛数据（进球/红黄牌等）</button></div>`;
+  }
+  document.getElementById('checkinPlayers').innerHTML = html;
+
+  // Scroll to detail
+  document.getElementById('checkinDetail').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeCheckinDetail() {
+  document.getElementById('checkinDetail').style.display = 'none';
+}
+
+// --- 管理员密码弹窗 ---
+function askAdminPassword(callback) {
+  openModal(`
+    <h3>🔑 管理员验证</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:8px">请输入管理员密码后操作</p>
+    <input id="adminPwdInput" type="password" placeholder="管理员密码" style="margin-bottom:12px" onkeyup="if(event.key==='Enter')verifyAdmin()">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="verifyAdmin()">确认</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+  window._adminCallback = callback;
+}
+
+function verifyAdmin() {
+  const pwd = document.getElementById('adminPwdInput').value;
+  if(pwd !== 'admin123') {
+    showToast('❌ 管理员密码错误');
+    return;
+  }
+  closeModal();
+  const cb = window._adminCallback;
+  if(cb) cb();
+  window._adminCallback = null;
+}
+
+function askAdminAndEdit(matchId) {
+  askAdminPassword(() => editMatch(matchId));
+}
+
+function askAdminAndEditData(matchId) {
+  askAdminPassword(() => editMatchData(matchId));
+}
+
+function askAdminAndDelete(matchId) {
+  askAdminPassword(() => deleteMatch(matchId));
+}
+
+function toggleCheckin(matchId, playerId) {
+  const existing = data.checkins.find(c => c.matchId === matchId && c.playerId === playerId);
+  if(existing) {
+    if(existing.status === 'confirmed') existing.status = 'declined';
+    else if(existing.status === 'declined') existing.status = 'pending';
+    else existing.status = 'confirmed';
+  } else {
+    data.checkins.push({matchId, playerId, status: 'confirmed', time: new Date().toISOString()});
+  }
+  saveData();
+  showCheckinDetail(matchId);
+}
+
+function finalizeMatch(matchId) {
+  openModal(`
+    <h3>✅ 确认完赛</h3>
+    <label>对手：</label>
+    <input id="fOpponent" value="${getMatch(matchId).opponent||''}" placeholder="对手名称">
+    <div class="form-row">
+      <div><label>我队进球</label><input id="fHomeScore" type="number" min="0" placeholder="0"></div>
+      <div><label>对手进球</label><input id="fAwayScore" type="number" min="0" placeholder="0"></div>
+    </div>
+    <label>比赛备注</label>
+    <textarea id="fNotes" rows="2" placeholder="进球者、亮点等"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-success" style="flex:1" onclick="doFinalizeMatch(${matchId})">确认完赛</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doFinalizeMatch(matchId) {
+  const m = getMatch(matchId);
+  const opp = document.getElementById('fOpponent').value.trim();
+  const hs = parseInt(document.getElementById('fHomeScore').value) || 0;
+  const as = parseInt(document.getElementById('fAwayScore').value) || 0;
+  const notes = document.getElementById('fNotes').value.trim();
+  if(!opp) { showToast('请输入对手名称'); return; }
+  m.opponent = opp;
+  m.homeScore = hs;
+  m.awayScore = as;
+  m.notes = notes;
+  m.status = 'completed';
+  saveData();
+  closeModal();
+  showToast('✅ 比赛已完赛！');
+  renderCheckin();
+  // Prompt performance recording
+  setTimeout(() => showPerformanceForm(matchId), 300);
+}
+
+function showPerformanceForm(matchId) {
+  const m = getMatch(matchId);
+  if(!m) return;
+  const players = sortedPlayers();
+  const perfs = getPerformancesForMatch(matchId);
+  const perfMap = {};
+  perfs.forEach(p => perfMap[p.playerId] = p);
+
+  const cks = getCheckinsForMatch(matchId).filter(c => c.status === 'confirmed');
+  const ckSet = new Set(cks.map(c => c.playerId));
+
+  let rows = players.map(p => {
+    const pf = perfMap[p.id] || {};
+    const played = ckSet.has(p.id);
+    return `<tr>
+      <td style="text-align:left">${p.name}</td>
+      <td><input type="checkbox" id="played_${p.id}" ${played?'checked':''}></td>
+      <td><input type="number" id="goal_${p.id}" value="${pf.goals||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+      <td><input type="number" id="assist_${p.id}" value="${pf.assists||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+      <td><input type="number" id="inter_${p.id}" value="${pf.interceptions||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+      <td><input type="number" id="mistake_${p.id}" value="${pf.mistakes||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+      <td><input type="number" id="yellow_${p.id}" value="${pf.yellowCards||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+      <td><input type="number" id="red_${p.id}" value="${pf.redCards||0}" min="0" style="width:50px;padding:6px;margin:0"></td>
+    </tr>`;
+  }).join('');
+
+  openModal(`
+    <h3>⚽ 记录个人数据 - vs ${m.opponent}</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:8px">勾选出场球员，填写进球/助攻/拦截/失误/红黄牌</p>
+    <div style="overflow-x:auto">
+    <table class="stat-table">
+      <thead><tr><th>球员</th><th>出场</th><th>⚽</th><th>🎯</th><th>🛡️</th><th>❌</th><th>🟨</th><th>🟥</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="savePerformances(${matchId})">保存数据</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">跳过</button>
+    </div>
+  `);
+}
+
+function savePerformances(matchId) {
+  // Remove old performances for this match
+  data.performances = data.performances.filter(p => p.matchId !== matchId);
+
+  data.players.forEach(p => {
+    const played = document.getElementById(`played_${p.id}`).checked;
+    const goals = parseInt(document.getElementById(`goal_${p.id}`).value) || 0;
+    const assists = parseInt(document.getElementById(`assist_${p.id}`).value) || 0;
+    const interceptions = parseInt(document.getElementById(`inter_${p.id}`).value) || 0;
+    const mistakes = parseInt(document.getElementById(`mistake_${p.id}`).value) || 0;
+    const yellowCards = parseInt(document.getElementById(`yellow_${p.id}`).value) || 0;
+    const redCards = parseInt(document.getElementById(`red_${p.id}`).value) || 0;
+    if(played || goals || assists || interceptions || mistakes || yellowCards || redCards) {
+      data.performances.push({ matchId, playerId: p.id, goals, assists, interceptions, mistakes, yellowCards, redCards });
+    }
+  });
+  saveData();
+  closeModal();
+  showToast('✅ 个人数据已保存！');
+  renderCheckin();
+}
+
+// ===== MATCHES =====
+function renderMatches() {
+  if(!yearFiltersInitialized) initYearFilters();
+  const year = document.getElementById('matchYearFilter').value;
+  const type = document.getElementById('matchTypeFilter').value;
+  let matches = filterMatchesByYearType(data.matches, year, type);
+  matches.sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+
+  const el = document.getElementById('matchList');
+  if(!matches.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>暂无比赛记录</div>';
+    return;
+  }
+  el.innerHTML = matches.map(m => {
+    const ck = getCheckinsForMatch(m.id);
+    const confirmed = ck.filter(c => c.status === 'confirmed').length;
+    const perfs = getPerformancesForMatch(m.id);
+    const totalGoals = perfs.reduce((s,p) => s+(p.goals||0), 0);
+    const totalAssists = perfs.reduce((s,p) => s+(p.assists||0), 0);
+    const score = m.status === 'completed' && m.homeScore != null ? `<strong>${m.homeScore} : ${m.awayScore}</strong>` : 'vs';
+    const act = m.status === 'completed' ? `<span class="status status-completed">已赛</span>` : `<span class="status status-upcoming">待赛</span>`;
+    return `<div class="match-card">
+      <div class="date">${formatDate(m.date)} ${m.time||''} · ${getMatchTypeBadge(m.matchType)} ${act}</div>
+      <div class="vs"><span>${m.teamName||'我队'}</span> ${score} <span>${m.opponent||'对手'}</span></div>
+      ${m.status === 'completed' ? `<div style="font-size:12px;color:var(--text2)">⚽${totalGoals}球 🎯${totalAssists}助 · ✅${confirmed}人出场</div>` : `<div style="font-size:12px;color:var(--text2)">✅${confirmed}人已确认</div>`}
+      ${isAdmin ? `<div style="margin-top:6px;display:flex;gap:4px">
+        ${m.status === 'completed'
+        ? `<button class="btn btn-outline btn-sm" onclick="editMatchData(${m.id})">📊 编辑数据</button><button class="btn btn-outline btn-sm" onclick="editMatch(${m.id})">📝 编辑</button>`
+        : `<button class="btn btn-outline btn-sm" onclick="showCheckinDetail(${m.id})">接龙</button>`}
+        <button class="btn btn-outline btn-sm" onclick="deleteMatch(${m.id})" style="color:var(--danger)">删除</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ===== 编辑已赛比赛数据 (比分+个人数据) =====
+function editMatchData(matchId) {
+  const m = getMatch(matchId);
+  if(!m) return;
+  const players = sortedPlayers();
+  const perfs = getPerformancesForMatch(matchId);
+  const perfMap = {};
+  perfs.forEach(p => perfMap[p.playerId] = p);
+  // 出场勾选默认按接龙签到确认状态，没有签到的按是否已有 performance 记录
+  const cks = getCheckinsForMatch(matchId).filter(c => c.status === 'confirmed');
+  const ckSet = new Set(cks.map(c => c.playerId));
+
+  let rows = players.map(p => {
+    const pf = perfMap[p.id] || {};
+    const played = ckSet.has(p.id) || (pf.goals||0) > 0 || (pf.assists||0) > 0 || (pf.yellowCards||0) > 0 || (pf.redCards||0) > 0;
+    return `<tr>
+      <td style="text-align:left">${p.name}</td>
+      <td><input type="checkbox" id="ed_played_${p.id}" ${played?'checked':''}></td>
+      <td><input type="number" id="ed_goal_${p.id}" value="${pf.goals||0}" min="0" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+      <td><input type="number" id="ed_assist_${p.id}" value="${pf.assists||0}" min="0" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+      <td><input type="number" id="ed_inter_${p.id}" value="${pf.interceptions||0}" min="0" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+      <td><input type="number" id="ed_mistake_${p.id}" value="${pf.mistakes||0}" min="0" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+      <td><input type="number" id="ed_yellow_${p.id}" value="${pf.yellowCards||0}" min="0" max="2" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+      <td><input type="number" id="ed_red_${p.id}" value="${pf.redCards||0}" min="0" max="1" style="width:38px;padding:4px;margin:0;text-align:center"></td>
+    </tr>`;
+  }).join('');
+
+  openModal(`
+    <h3>📊 编辑比赛数据</h3>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">${formatDate(m.date)} vs ${m.opponent}</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div><label>我队进球</label><input id="edHome" type="number" min="0" value="${m.homeScore||0}"></div>
+      <div><label>对手进球</label><input id="edAway" type="number" min="0" value="${m.awayScore||0}"></div>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:6px">球员数据（勾选=出场）</p>
+    <div style="overflow-x:auto;max-height:340px;overflow-y:auto">
+    <table class="stat-table" style="font-size:12px">
+      <thead><tr><th>球员</th><th>出场</th><th>⚽</th><th>🎯</th><th>🛡️</th><th>❌</th><th>🟨</th><th>🟥</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="doEditMatchData(${matchId})">保存</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doEditMatchData(matchId) {
+  const m = getMatch(matchId);
+  // Save score
+  const edHome = document.getElementById('edHome').value;
+  const edAway = document.getElementById('edAway').value;
+  m.homeScore = edHome === '' ? null : parseInt(edHome);
+  m.awayScore = edAway === '' ? null : parseInt(edAway);
+  m.status = 'completed';
+
+  // Save performance data (进球/助攻/红黄牌)
+  data.performances = data.performances.filter(p => p.matchId !== matchId);
+
+  // 同步更新接龙签到：勾选了=confirmed（出场），没勾选=pending（不出场）
+  data.checkins = data.checkins.filter(c => c.matchId !== matchId);
+
+  data.players.forEach(p => {
+    const played = document.getElementById(`ed_played_${p.id}`).checked;
+    const goals = parseInt(document.getElementById(`ed_goal_${p.id}`).value) || 0;
+    const assists = parseInt(document.getElementById(`ed_assist_${p.id}`).value) || 0;
+    const interceptions = parseInt(document.getElementById(`ed_inter_${p.id}`).value) || 0;
+    const mistakes = parseInt(document.getElementById(`ed_mistake_${p.id}`).value) || 0;
+    const yellowCards = parseInt(document.getElementById(`ed_yellow_${p.id}`).value) || 0;
+    const redCards = parseInt(document.getElementById(`ed_red_${p.id}`).value) || 0;
+
+    // 同步到签到记录
+    if(played) {
+      data.checkins.push({ matchId, playerId: p.id, status: 'confirmed', time: new Date().toISOString() });
+    } else {
+      data.checkins.push({ matchId, playerId: p.id, status: 'pending', time: new Date().toISOString() });
+    }
+
+    // Performance 记录
+    data.performances.push({ matchId, playerId: p.id, goals, assists, interceptions, mistakes, yellowCards, redCards });
+  });
+  saveData();
+  closeModal();
+  showToast('✅ 比赛数据已更新');
+  renderMatches();
+  renderHome();
+}
+
+function editMatch(matchId) {
+  const m = getMatch(matchId);
+  if(!m) return;
+  openModal(`
+    <h3>📝 编辑比赛（管理员）</h3>
+    <label>日期</label><input id="eDate" type="date" value="${m.date||''}">
+    <label>时间</label><input id="eTime" type="time" value="${m.time||''}">
+    <label>对手</label><input id="eOpponent" value="${m.opponent||''}">
+    <label>比赛类型</label>
+    <select id="eType"><option value="league" ${m.matchType==='league'?'selected':''}>联赛</option>
+      <option value="cup" ${m.matchType==='cup'?'selected':''}>杯赛</option>
+      <option value="friendly" ${m.matchType==='friendly'?'selected':''}>友谊赛</option>
+      <option value="training" ${m.matchType==='training'?'selected':''}>训练赛</option>
+      <option value="group" ${m.matchType==='group'?'selected':''}>小组赛</option>
+      <option value="knockout" ${m.matchType==='knockout'?'selected':''}>淘汰赛</option>
+      <option value="semifinal" ${m.matchType==='semifinal'?'selected':''}>半决赛</option>
+      <option value="final" ${m.matchType==='final'?'selected':''}>决赛</option>
+    </select>
+    <label>我队队名</label><input id="eTeamName" value="${m.teamName||''}">
+    <div class="form-row"><div><label>我队进球</label><input id="eHome" type="number" value="${m.homeScore||''}"></div><div><label>对手进球</label><input id="eAway" type="number" value="${m.awayScore||''}"></div></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="doEditMatch(${matchId})">保存</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doEditMatch(matchId) {
+  const m = getMatch(matchId);
+  const date = document.getElementById('eDate').value;
+  const time = document.getElementById('eTime').value;
+  const opp = document.getElementById('eOpponent').value.trim();
+  const type = document.getElementById('eType').value;
+  const teamName = document.getElementById('eTeamName').value.trim() || '我队';
+  const homeScore = document.getElementById('eHome').value === '' ? null : parseInt(document.getElementById('eHome').value);
+  const awayScore = document.getElementById('eAway').value === '' ? null : parseInt(document.getElementById('eAway').value);
+  
+  m.date = date; m.time = time; m.opponent = opp;
+  m.matchType = type; m.teamName = teamName;
+  m.homeScore = homeScore; m.awayScore = awayScore;
+  if(homeScore !== null) m.status = 'completed';
+  saveData();
+  closeModal();
+  
+  // Sync to server
+  fetch('/api/matches/' + matchId, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, time, opponent: opp, matchType: type, teamName, homeScore, awayScore, adminCode: 'admin123' })
+  }).catch(() => {});
+  
+  showToast('✅ 比赛已更新');
+  renderMatches();
+}
+
+function deleteMatch(matchId) {
+  if(!confirm('确定删除该比赛？相关数据也会一并删除。')) return;
+  
+  // Sync to server
+  fetch('/api/matches/' + matchId + '?adminCode=admin123', { method: 'DELETE' }).catch(() => {});
+  
+  data.matches = data.matches.filter(m => m.id !== matchId);
+  data.checkins = data.checkins.filter(c => c.matchId !== matchId);
+  data.performances = data.performances.filter(p => p.matchId !== matchId);
+  saveData();
+  showToast('已删除');
+  renderMatches();
+  renderHome();
+}
+
+// ===== PLAYERS =====
+function renderPlayers() {
+  if(!yearFiltersInitialized) initYearFilters();
+  const year = document.getElementById('playerYearFilter').value;
+  const players = sortedPlayers();
+  const el = document.getElementById('playerList');
+  if(!players.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">👥</div>暂无球员，添加第一个吧</div>';
+    return;
+  }
+  const posMap = {fw:'前锋',mf:'中场',df:'后卫',gk:'门将','':'未设置'};
+
+  // Get completed matches for the selected year
+  const yearMatchIds = new Set();
+  if (year === 'all') {
+    data.matches.filter(m => m.status==='completed').forEach(m => yearMatchIds.add(m.id));
+  } else {
+    data.matches.filter(m => m.status==='completed' && m.date && !isNaN(new Date(m.date).getFullYear()) && new Date(m.date).getFullYear() == year).forEach(m => yearMatchIds.add(m.id));
+  }
+
+  el.innerHTML = players.map(p => {
+    // 出场次数 = 接龙签到确认场次 for selected year
+    const played = data.checkins.filter(c => c.playerId === p.id && c.status === 'confirmed' && yearMatchIds.has(c.matchId)).length;
+    const yearPerfs = data.performances.filter(perf => perf.playerId === p.id && yearMatchIds.has(perf.matchId));
+    const goals = yearPerfs.reduce((s,perf) => s+(perf.goals||0), 0);
+    const assists = yearPerfs.reduce((s,perf) => s+(perf.assists||0), 0);
+    const interceptions = yearPerfs.reduce((s,perf) => s+(perf.interceptions||0), 0);
+    const mistakes = yearPerfs.reduce((s,perf) => s+(perf.mistakes||0), 0);
+    return `<div class="player-card">
+      <div class="player-avatar">${p.name[0]}</div>
+      <div class="player-info">
+        <div class="player-name">${p.name} ${p.number ? `<span style="font-weight:400;color:var(--text2)">#${p.number}</span>` : ''}</div>
+        <div class="player-meta">${posMap[p.position]||''} · 出场${played}次 · ⚽${goals}球 🎯${assists}助 🛡️${interceptions}拦 ❌${mistakes}误</div>
+      </div>
+      ${isAdmin ? `<button class="btn btn-outline btn-sm" onclick="editPlayer(${p.id})">✏️</button><button class="btn btn-outline btn-sm" onclick="deletePlayer(${p.id})">🗑️</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function showAddPlayer() {
+  openModal(`
+    <h3>➕ 添加球员</h3>
+    <label>姓名 *</label><input id="pName" placeholder="球员姓名">
+    <label>球衣号码</label><input id="pNumber" type="number" min="0" max="99" placeholder="号码">
+    <label>场上位置</label>
+    <select id="pPosition"><option value="">未设置</option><option value="gk">门将</option><option value="df">后卫</option><option value="mf">中场</option><option value="fw">前锋</option></select>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="doAddPlayer()">添加</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doAddPlayer() {
+  const name = document.getElementById('pName').value.trim();
+  if(!name) { showToast('请输入球员姓名'); return; }
+  const num = document.getElementById('pNumber').value;
+  const pos = document.getElementById('pPosition').value;
+  data.players.push({ id: genId(), name, number: num ? parseInt(num) : null, position: pos, joinDate: new Date().toISOString().slice(0,10) });
+  saveData();
+  closeModal();
+  showToast(`✅ 已添加 ${name}`);
+  renderPlayers();
+}
+
+function editPlayer(playerId) {
+  const p = getPlayer(playerId);
+  if(!p) return;
+  openModal(`
+    <h3>✏️ 编辑球员</h3>
+    <label>姓名</label><input id="pName" value="${p.name}">
+    <label>球衣号码</label><input id="pNumber" type="number" value="${p.number||''}">
+    <label>场上位置</label>
+    <select id="pPosition"><option value="">未设置</option>
+      <option value="gk" ${p.position==='gk'?'selected':''}>门将</option>
+      <option value="df" ${p.position==='df'?'selected':''}>后卫</option>
+      <option value="mf" ${p.position==='mf'?'selected':''}>中场</option>
+      <option value="fw" ${p.position==='fw'?'selected':''}>前锋</option>
+    </select>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="doEditPlayer(${playerId})">保存</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doEditPlayer(playerId) {
+  const p = getPlayer(playerId);
+  const name = document.getElementById('pName').value.trim();
+  if(!name) { showToast('请输入球员姓名'); return; }
+  p.name = name;
+  p.number = parseInt(document.getElementById('pNumber').value) || null;
+  p.position = document.getElementById('pPosition').value;
+  saveData();
+  closeModal();
+  showToast('已更新');
+  renderPlayers();
+}
+
+function deletePlayer(playerId) {
+  if(!confirm('确定删除该球员？相关数据不会删除但关联会丢失。')) return;
+  data.players = data.players.filter(p => p.id !== playerId);
+  saveData();
+  showToast('已删除');
+  renderPlayers();
+}
+
+// ===== CREATE MATCH =====
+function showCreateMatch() {
+  openModal(`
+    <h3>⚽ 发起比赛接龙</h3>
+    <p style="font-size:13px;color:var(--danger);margin-bottom:8px">🔑 仅管理员可发起接龙</p>
+    <label>管理员密码 *</label>
+    <input id="cPassword" type="password" placeholder="请输入管理员密码">
+    <label>日期 *</label><input id="cDate" type="date" value="${new Date().toISOString().slice(0,10)}">
+    <label>时间</label><input id="cTime" type="time" value="20:00">
+    <label>对手 *</label><input id="cOpponent" placeholder="对手队名">
+    <label>比赛类型</label>
+    <select id="cType"><option value="league">联赛</option><option value="cup">杯赛</option><option value="friendly" selected>友谊赛</option><option value="training">训练赛</option><option value="group">小组赛</option><option value="knockout">淘汰赛</option><option value="semifinal">半决赛</option><option value="final">决赛</option></select>
+    <label>我队队名</label><input id="cTeamName" placeholder="我队" value="我队">
+    <label>地点</label><input id="cLocation" placeholder="球场/场地">
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-primary" style="flex:1" onclick="doCreateMatch()">创建</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeModal()">取消</button>
+    </div>
+  `);
+}
+
+function doCreateMatch() {
+  const password = document.getElementById('cPassword').value.trim();
+  const date = document.getElementById('cDate').value;
+  const time = document.getElementById('cTime').value;
+  const opp = document.getElementById('cOpponent').value.trim();
+  const type = document.getElementById('cType').value;
+  const teamName = document.getElementById('cTeamName').value.trim() || '我队';
+  const loc = document.getElementById('cLocation').value.trim();
+  if(!password) { showToast('请输入管理员密码'); return; }
+  if(!date) { showToast('请选择日期'); return; }
+  if(!opp) { showToast('请输入对手'); return; }
+  fetch('/api/matches', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      date, time: time || '',
+      opponent: opp,
+      matchType: type,
+      teamName,
+      location: loc,
+      adminCode: password
+    })
+  }).then(r => r.json()).then(res => {
+    if(res.error) { showToast('❌ ' + res.error); return; }
+    res.id = genId();
+    data.matches.push(res);
+    saveData();
+    closeModal();
+    showToast('✅ 比赛已创建，快去发起接龙吧！');
+    renderCheckin();
+    renderMatches();
+    renderHome();
+    document.querySelector('.tab[data-page="checkin"]').click();
+  }).catch(() => {
+    showToast('❌ 创建失败，请重试');
+  });
+}
+
+// ===== STATS =====
+let statSortField = 'goals';
+let statSortAsc = false;
+
+function sortStat(field) {
+  if(statSortField === field) {
+    statSortAsc = !statSortAsc;
+  } else {
+    statSortField = field;
+    statSortAsc = false;
+  }
+  // Update sort icons
+  ['appearances','goals','assists','interceptions','mistakes','yellowCards','redCards','avg','rate'].forEach(f => {
+    const icon = document.getElementById('sortIcon-' + f);
+    if(icon) icon.textContent = f === statSortField ? (statSortAsc ? '▲' : '▼') : '';
+  });
+  renderStats();
+}
+
+function renderStats() {
+  if(!yearFiltersInitialized) initYearFilters();
+  const year = document.getElementById('statYear').value;
+  const matchType = document.getElementById('statMatchType').value;
+  const period = document.getElementById('statPeriod').value;
+
+  let filteredMatches = filterMatchesByYearType(data.matches.filter(m => m.status === 'completed'), year, matchType);
+  if(period === 'season') {
+    const cy = new Date().getFullYear();
+    filteredMatches = filteredMatches.filter(m => m.date && !isNaN(new Date(m.date).getFullYear()) && new Date(m.date).getFullYear() === cy);
+  }
+
+  const matchIds = new Set(filteredMatches.map(m => m.id));
+  const filteredPerfs = data.performances.filter(p => matchIds.has(p.matchId));
+
+  // Build player stats
+  const stats = {};
+  data.players.forEach(p => {
+    stats[p.id] = { name: p.name, appearances: 0, goals: 0, assists: 0, interceptions: 0, mistakes: 0, yellowCards: 0, redCards: 0 };
+  });
+
+  // 出场从接龙签到算
+  data.checkins.filter(c => matchIds.has(c.matchId) && c.status === 'confirmed').forEach(c => {
+    if(stats[c.playerId]) stats[c.playerId].appearances++;
+  });
+
+  // 进球/助攻/拦截/失误/红黄牌从 performance 算
+  filteredPerfs.forEach(pf => {
+    if(!stats[pf.playerId]) return;
+    stats[pf.playerId].goals += pf.goals || 0;
+    stats[pf.playerId].assists += pf.assists || 0;
+    stats[pf.playerId].interceptions += (pf.interceptions || 0);
+    stats[pf.playerId].mistakes += (pf.mistakes || 0);
+    stats[pf.playerId].yellowCards += (pf.yellowCards || 0);
+    stats[pf.playerId].redCards += (pf.redCards || 0);
+  });
+
+  // 出席率 = 接龙确认场次 / 总场次
+  const attStats = {};
+  data.players.forEach(p => attStats[p.id] = { total: matchIds.size, confirmed: 0 });
+  data.checkins.forEach(c => {
+    if(!matchIds.has(c.matchId)) return;
+    if(!attStats[c.playerId]) return;
+    if(c.status === 'confirmed') attStats[c.playerId].confirmed++;
+  });
+
+  // Sort by current field and direction
+  const sorted = Object.entries(stats).sort((a,b) => {
+    let va, vb;
+    const avgA = a[1].appearances > 0 ? a[1].goals/a[1].appearances : 0;
+    const avgB = b[1].appearances > 0 ? b[1].goals/b[1].appearances : 0;
+    const rateA = (attStats[a[0]] && attStats[a[0]].total > 0) ? attStats[a[0]].confirmed/attStats[a[0]].total : 0;
+    const rateB = (attStats[b[0]] && attStats[b[0]].total > 0) ? attStats[b[0]].confirmed/attStats[b[0]].total : 0;
+
+    switch(statSortField) {
+      case 'appearances': va = a[1].appearances; vb = b[1].appearances; break;
+      case 'goals': va = a[1].goals; vb = b[1].goals; break;
+      case 'assists': va = a[1].assists; vb = b[1].assists; break;
+      case 'interceptions': va = a[1].interceptions; vb = b[1].interceptions; break;
+      case 'mistakes': va = a[1].mistakes; vb = b[1].mistakes; break;
+      case 'yellowCards': va = a[1].yellowCards; vb = b[1].yellowCards; break;
+      case 'redCards': va = a[1].redCards; vb = b[1].redCards; break;
+      case 'avg': va = avgA; vb = avgB; break;
+      case 'rate': va = rateA; vb = rateB; break;
+      default: va = a[1].goals; vb = b[1].goals;
+    }
+    const dir = statSortAsc ? 1 : -1;
+    return (va < vb ? -1 : va > vb ? 1 : 0) * dir;
+  });
+
+  // Update title to show current sort
+  const sortLabels = { appearances:'出场', goals:'进球', assists:'助攻', interceptions:'拦截', mistakes:'失误', yellowCards:'黄牌', redCards:'红牌', avg:'场均进球', rate:'出勤率' };
+  const sortLabel = sortLabels[statSortField] || '进球';
+  document.querySelector('#statTable').closest('.card').querySelector('.card-title').textContent = `⚽ 综合数据（按${sortLabel}${statSortAsc?'升序':'降序'}）`;
+  const tbody = document.getElementById('statBody');
+  if(!sorted.length || !data.players.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;color:var(--text2)">暂无数据</td></tr>';
+  } else {
+    tbody.innerHTML = sorted.map(([pid, s]) => {
+      const at = attStats[pid];
+      const rate = at && at.total > 0 ? Math.round(at.confirmed/at.total*100) : 0;
+      const avgGoals = s.appearances > 0 ? (s.goals/s.appearances).toFixed(2) : '0.00';
+      return `<tr><td class="name-cell">${s.name}</td><td>${s.appearances}</td><td><strong>${s.goals}</strong></td><td>${s.assists}</td><td>${s.interceptions||0}</td><td>${s.mistakes||0}</td><td>${s.yellowCards||0}</td><td>${s.redCards||0}</td><td>${avgGoals}</td><td>${rate}%</td></tr>`;
+    }).join('');
+  }
+
+  // Efficiency ranking
+  renderEfficiencyRanking(stats, matchIds);
+
+  // Charts
+  renderStatsCharts(sorted, stats);
+}
+
+function renderEfficiencyRanking(stats, matchIds) {
+  const el = document.getElementById('effRanking');
+  // Efficiency = 进球+助攻+拦截+出场-失误-黄牌-红牌×2
+  const entries = Object.entries(stats)
+    .map(([pid, s]) => ({
+      pid: parseInt(pid), name: s.name,
+      efficiency: (s.goals||0) + (s.assists||0) + (s.interceptions||0) + (s.appearances||0) - (s.mistakes||0) - (s.yellowCards||0) - ((s.redCards||0)*2),
+      goals: s.goals, assists: s.assists,
+      interceptions: s.interceptions||0, mistakes: s.mistakes||0,
+      yellowCards: s.yellowCards||0, redCards: s.redCards||0
+    }))
+    .filter(e => e.efficiency !== 0 || e.goals > 0 || e.assists > 0 || e.interceptions > 0 || e.mistakes > 0 || e.yellowCards > 0 || e.redCards > 0)
+    .sort((a,b) => b.efficiency - a.efficiency)
+    .slice(0,10);
+
+  if(!entries.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:16px">暂无效率数据</div>';
+    return;
+  }
+  el.innerHTML = `<table class="stat-table" style="margin-bottom:12px"><thead><tr>
+    <th>排名</th><th>球员</th><th>效率值</th><th>⚽</th><th>🎯</th><th>🛡️</th><th>❌</th><th>🟨</th><th>🟥</th>
+  </tr></thead><tbody>
+    ${entries.map((e, i) => {
+      return `<tr><td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td><td class="name-cell">${e.name}</td><td><strong>${e.efficiency > 0 ? '+' : ''}${e.efficiency.toFixed(1)}</strong></td><td>${e.goals}</td><td>${e.assists}</td><td>${e.interceptions}</td><td>${e.mistakes}</td><td>${e.yellowCards}</td><td>${e.redCards}</td></tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+let statsSorted = [];
+let statsCache = {};
+
+function renderStatsCharts(sorted, stats) {
+  statsSorted = sorted;
+  statsCache = stats;
+  // Destroy old charts
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e) {} });
+  charts = {};
+
+  // Goals chart
+  const topScorers = sorted.filter(([_,s]) => s.goals > 0).slice(0,8);
+  if(topScorers.length) {
+    const labels = topScorers.map(([_,s]) => s.name);
+    const goals = topScorers.map(([_,s]) => s.goals);
+    const ctx = document.getElementById('chartGoals').getContext('2d');
+    charts.goals = new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: '进球', data: goals, backgroundColor: '#1a73e8', borderRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  } else {
+    document.getElementById('chartGoals').getContext('2d');
+  }
+
+  // Appearances chart
+  const topApp = sorted.filter(([_,s]) => s.appearances > 0).slice(0,8);
+  if(topApp.length) {
+    const labels = topApp.map(([_,s]) => s.name);
+    const app = topApp.map(([_,s]) => s.appearances);
+    const ctx2 = document.getElementById('chartAppearances').getContext('2d');
+    charts.app = new Chart(ctx2, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: '出场次数', data: app, backgroundColor: '#34a853', borderRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  } else {
+    document.getElementById('chartAppearances').getContext('2d');
+  }
+}
+
+// ===== Init =====
+// Handle Enter key in modals
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Escape') closeModal();
+});
+
+// On load: try loading from server, fallback to localStorage
+(function init() {
+  // Priority: localStorage is source of truth (user's latest edits)
+  // Only fill missing fields from server
+  const localRaw = localStorage.getItem(STORAGE_KEY);
+  const hasLocal = localRaw ? (JSON.parse(localRaw).players || []).length > 0 : false;
+
+  if(hasLocal) {
+    data = JSON.parse(localRaw);
+  }
+
+  // Fetch server data, merge with local (local edits take priority for performances)
+  fetch('/api/sync')
+    .then(r => r.json())
+    .then(serverData => {
+      if(hasLocal) {
+        mergeData(data, serverData);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } else if(serverData && serverData.players && serverData.players.length > 0) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+        data = serverData;
+      } else {
+        initLocal();
+        return;
+      }
+      updateTeamHeader();
+      renderHome();
+    })
+    .catch(() => {
+      if(!hasLocal) initLocal();
+      else {
+        updateTeamHeader();
+        renderHome();
+      }
+    });
+})();
+
+function mergeData(localData, serverData) {
+  if(!serverData) return;
+  // Use server as base, preserve local edits for performance details
+  const editedFields = {}; // key: matchId_playerId -> {interceptions, mistakes, yellowCards, redCards}
+  (localData.performances || []).forEach(lp => {
+    const key = lp.matchId + '_' + lp.playerId;
+    const edited = {};
+    if(lp.interceptions !== undefined && lp.interceptions > 0) edited.interceptions = lp.interceptions;
+    if(lp.mistakes !== undefined && lp.mistakes > 0) edited.mistakes = lp.mistakes;
+    if(lp.yellowCards !== undefined && lp.yellowCards > 0) edited.yellowCards = lp.yellowCards;
+    if(lp.redCards !== undefined && lp.redCards > 0) edited.redCards = lp.redCards;
+    if(Object.keys(edited).length) editedFields[key] = edited;
+  });
+  // Assign server data to local
+  localData.matches = JSON.parse(JSON.stringify(serverData.matches || []));
+  localData.players = JSON.parse(JSON.stringify(serverData.players || []));
+  localData.checkins = JSON.parse(JSON.stringify(serverData.checkins || []));
+  localData.teamInfo = JSON.parse(JSON.stringify(serverData.teamInfo || {}));
+  localData.performances = JSON.parse(JSON.stringify(serverData.performances || []));
+  // Re-apply local edits
+  localData.performances.forEach(lp => {
+    const key = lp.matchId + '_' + lp.playerId;
+    if(editedFields[key]) {
+      Object.assign(lp, editedFields[key]);
+    }
+  });
+}
+
+function updateTeamHeader() {
+  if(data.teamInfo) {
+    if(data.teamInfo.name) {
+      document.getElementById('teamName').textContent = '🏆 ' + data.teamInfo.name;
+    }
+    if(data.teamInfo.logo) {
+      const logo = document.getElementById('teamLogo');
+      logo.src = data.teamInfo.logo;
+      logo.style.display = 'inline-block';
+    }
+  }
+}
+
+function initLocal() {
+  if(!data.players.length) {
+    // Add demo data
+    const names = ['张伟','王磊','李强','刘洋','陈明','赵鹏','孙浩','周杰','吴昊','郑凯'];
+    const positions = ['fw','fw','mf','mf','mf','df','df','df','gk','fw'];
+    const numbers = [10,7,8,6,5,4,3,2,1,11];
+    names.forEach((n, i) => {
+      data.players.push({ id: genId(), name: n, number: numbers[i], position: positions[i], joinDate: '2025-01-01' });
+    });
+
+    const demoMatches = [
+      { date:'2025-03-01', time:'20:00', opponent:'老男孩FC', matchType:'league', teamName:'我队', homeScore:3, awayScore:1, status:'completed' },
+      { date:'2025-03-08', time:'20:00', opponent:'飞翔足球', matchType:'league', teamName:'我队', homeScore:2, awayScore:2, status:'completed' },
+      { date:'2025-03-15', time:'19:30', opponent:'铁血战车', matchType:'cup', teamName:'我队', homeScore:1, awayScore:0, status:'completed' },
+      { date:'2025-03-22', time:'20:00', opponent:'蓝色风暴', matchType:'friendly', teamName:'我队', homeScore:4, awayScore:3, status:'completed' },
+      { date:'2025-05-10', time:'20:00', opponent:'劲风队', matchType:'friendly', teamName:'我队', homeScore:null, awayScore:null, status:'upcoming' },
+      { date:'2025-05-24', time:'19:00', opponent:'绿茵传奇', matchType:'league', teamName:'我队', homeScore:null, awayScore:null, status:'upcoming' },
+    ];
+    demoMatches.forEach(m => {
+      const mid = genId();
+      data.matches.push({...m, id:mid, location:'', notes:'', createdAt:new Date().toISOString()});
+
+      // Auto checkin for completed matches
+      if(m.status === 'completed') {
+        data.players.forEach(p => {
+          if(Math.random() > 0.2) {
+            data.checkins.push({ matchId:mid, playerId:p.id, status:'confirmed' });
+          }
+        });
+        // Random performances
+        const playing = data.checkins.filter(c => c.matchId === mid);
+        playing.forEach(c => {
+          const goals = Math.random() > 0.7 ? Math.floor(Math.random()*2)+1 : 0;
+          const assists = Math.random() > 0.6 ? Math.floor(Math.random()*2) : 0;
+          data.performances.push({ matchId:mid, playerId:c.playerId, goals, assists, interceptions:0, mistakes:0, yellowCards:0, redCards:0 });
+        });
+      }
+    });
+    saveData();
+  }
+  updateTeamHeader();
+  renderHome();
+}
+
+</script>
+</body>
+</html>
