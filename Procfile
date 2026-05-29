@@ -1,1 +1,1 @@
-web: node server.js
+web: mkdir -p uploads && node server.js
